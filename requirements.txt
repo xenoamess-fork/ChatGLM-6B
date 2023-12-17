@@ -6,3 +6,4 @@ gradio
 mdtex2html
 sentencepiece
 accelerate
+iterators==0.2.0

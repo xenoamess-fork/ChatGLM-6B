@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
+from iterators import TimeoutIterator
 from transformers import AutoTokenizer, AutoModel
 import uvicorn, json, datetime
 import torch
@@ -27,18 +28,25 @@ def predict(
         temperature
 ):
     fullLastResponse = ""
-    for response, history in model.stream_chat(
+    for response, history in TimeoutIterator(model.stream_chat(
             tokenizer,
             prompt,
             history,
             max_length=max_length,
             top_p=top_p,
             temperature=temperature
-    ):
-        currentResponse = response[len(fullLastResponse):]
+    ), timeout=0.1, sentinel=("", "")):
+        fullLastResponseLength = len(fullLastResponse)
+        responseLength = len(response)
+        if responseLength == 0:
+            currentResponse = ""
+        elif len(response) >= fullLastResponseLength:
+            currentResponse = response[fullLastResponseLength:]
+            fullLastResponse = response
+        else:
+            currentResponse = ""
         print(currentResponse)
         yield currentResponse + "\n"
-        fullLastResponse = response
 
 @app.post("/fastapi")
 async def fastapi(request: Request):
