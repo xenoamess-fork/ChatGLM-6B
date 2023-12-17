@@ -26,7 +26,6 @@ def predict(
         top_p,
         temperature
 ):
-    global fullLastResponse
     fullLastResponse = ""
     for response, history in model.stream_chat(
             tokenizer,
